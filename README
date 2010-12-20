@@ -1,8 +1,54 @@
 Trackpad synth
+==============
+
+Program to generate SKINI data from a macbook trackpad.
+
+
+Installation
+------------
+
+Get a SKINI reader.  I've been using the Standford Synthesis Toolkit.
+You can download it from:
+
+  http://ccrma.stanford.edu/software/stk/release/stk-4.4.2.tar.gz
+
+Unzip it, run "./configure" and "make" in the stk directory.
+
+Check that it's working:
+
+  cat stk-4.4.2/projects/demo/scores/test.ski | stk-4.4.2/projects/demo/demo Clarinet -or -ip
+
+You should hear something.
+
+Put the stk folder paralell to our test.m and Makefile.  Then you can
+run "make run" and it should all work.
+
+  $ ls
+  stk-4.4.2/
+  test.m
+  Makefile
+  $ make run
+  gcc -F/System/Library/PrivateFrameworks -framework MultitouchSupport test.m -o test -std=c99
+  ./test  D | stk-4.4.2/projects/demo/demo Clarinet -or -ip
+  [now it should be accepting trackpad input]
+
+
+Usage
+-----
+
+There are 4 rows (N_OCTAVES) each of which has a major scale (change
+'scale') of 7 notes.  It gives polyphonic skini, but demo is
+monophonic so you don't hear that.  I need to figure out a monophonic
+skini reading program.
+
+
+
+Misc
+----
 
 Started with multitouch code from:
-
   http://www.steike.com/code/multitouch/
 
 All code gpl
-.
+
+
