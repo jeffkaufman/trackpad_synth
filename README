@@ -1,11 +1,29 @@
 Trackpad synth
 ==============
 
-Program to generate SKINI data from a macbook trackpad.
+Program to generate SKINI or MIDI data from a macbook trackpad.
 
 
 Installation
 ------------
+
+Choose either MIDI or SKINI output.  MIDI lets you choose from more
+and better voices, SKINI lets you write new voices with the stanford
+toolkit.
+
+
+  MIDI
+  ----
+
+You need something that can turn midi into sound.  SimpleSynth is good:
+
+  http://notahat.com/simplesynth
+
+Start it running.
+
+
+  SKINI
+  -----
 
 Get a SKINI reader.  I've been using the Standford Synthesis Toolkit.
 You can download it from:
@@ -20,17 +38,19 @@ Check that it's working:
 
 You should hear something.
 
-Put the stk folder paralell to our test.m and Makefile.  Then you can
-run "make run" and it should all work.
+Put the stk folder paralell to our test.m and Makefile.
 
-  $ ls
-  stk-4.4.2/
-  test.m
-  Makefile
-  $ make run
-  gcc -F/System/Library/PrivateFrameworks -framework MultitouchSupport test.m -o test -std=c99
-  ./test  D | stk-4.4.2/projects/demo/demo Clarinet -or -ip
-  [now it should be accepting trackpad input]
+
+Once you have either MIDI or SKINI working, in this directory run either:
+
+  # for midi
+  make runmidi
+
+  # for skini
+  make runskini
+
+Kill it with control C when you're done.  It puts midi on channel 3,
+so that's the one you'd twiddle settings for.
 
 
 Usage
@@ -48,6 +68,9 @@ Misc
 
 Started with multitouch code from:
   http://www.steike.com/code/multitouch/
+
+For writing midi output I used the source of vmpk as a guide:
+  http://vmpk.sourceforge.net/
 
 All code gpl
 

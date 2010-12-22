@@ -2,22 +2,16 @@ I=Clarinet
 KEY=D
 V=12
 
-run: test
-	./test ${KEY} | stk-4.4.2/projects/demo/demo ${I} -or -ip
+runskini: trackcontroller
+	./trackcontroller ${KEY} | stk-4.4.2/projects/demo/demo ${I} -n ${V} -or -ip 
 
-ski:
-	cat test.ski | stk-4.4.2/projects/demo/demo ${I} -or -ip
+runsolo: trackcontroller
+	./trackcontroller
 
-runpoly: test
-	./test ${KEY} | stk-4.4.2/projects/demo/demo ${I} -n ${V} -or -ip 
-
-runsolo: test
-	./test
-
-test: test.m
+trackcontroller: trackcontroller.m
 	gcc -F/System/Library/PrivateFrameworks -framework MultitouchSupport \
 	-framework CoreMIDI -framework CoreFoundation -framework CoreAudio \
 	$^ -o $@ -std=c99
 
-runmidi: test
-	./test -m ${KEY}
+runmidi: trackcontroller
+	./trackcontroller -m ${KEY}

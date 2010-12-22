@@ -56,7 +56,7 @@ int midi = 0;
 MIDIClientRef midiclient;
 MIDIEndpointRef midiendpoint;
 
-void compose_midi(char actionType, int noteNo, Byte* msg) {
+void compose_midi(char actionType, int noteNo, int v, Byte* msg) {
 
   if (actionType == 'O') { /* on */
     msg[0] = 0x90;
@@ -65,6 +65,17 @@ void compose_midi(char actionType, int noteNo, Byte* msg) {
   else if (actionType == 'o') { /* off */
     msg[0] = 0x80;
     msg[2] = 0;
+  }
+  else if (actionType == 'A') { /* aftertouch */
+    msg[0] = 0xA0;
+    msg[2] = 82;
+  }
+
+  if (v != -1) {
+    if (v > 127) {
+      v = 127;
+    }
+    msg[2] = v;
   }
 
   Byte channel = 2;
@@ -76,15 +87,15 @@ void compose_midi(char actionType, int noteNo, Byte* msg) {
 
 
 #define PACKET_BUF_SIZE (3+64) /* 3 for message, 32 for structure vars */
-void send_midi(char actionType, int noteNo) {
+void send_midi(char actionType, int noteNo, int v) {
   Byte buffer[PACKET_BUF_SIZE];
   Byte msg[3];
-  compose_midi(actionType, noteNo, msg);
+  compose_midi(actionType, noteNo, v, msg);
 
   MIDIPacketList *packetList = (MIDIPacketList*) buffer;
   MIDIPacket *curPacket = MIDIPacketListInit(packetList);
 
-  printf("%x %x %x\n", msg[0], msg[1], msg[2]);
+  //printf("%x %x %x\n", msg[0], msg[1], msg[2]);
 
   curPacket = MIDIPacketListAdd(packetList,
 				PACKET_BUF_SIZE,
@@ -99,10 +110,18 @@ void send_midi(char actionType, int noteNo) {
   attempt(MIDIReceived(midiendpoint, packetList), "error sending midi");
 }
 
+void aftertouch(int note, int amt) {
+  if (midi) {
+    send_midi('A', note, amt);
+  }
+  else {
+    /* unsupported */
+  }
+}
 
 void note_on(int note) {
   if (midi) {
-    send_midi('O', note);
+    send_midi('O', note, -1);
   }
   else {
     printf("NoteOn          0.0 %d %d %d\n", note, note, 82);
@@ -112,26 +131,11 @@ void note_on(int note) {
 
 void note_off(int note) {
   if (midi) {
-    send_midi('o', note);
+    send_midi('o', note, -1);
   }
   else {
     printf("NoteOff         0.0 %d %d 0\n", note, note);
     fflush(stdout);
-  }
-}
-
-int cur_volume = 64;
-void volume(int note, int new_volume) {
-  if (new_volume > 127) {
-    new_volume = 127;
-  }
-
-  if (cur_volume != new_volume) {
-    //printf("Volume        0.0 2 %d\n", new_volume+1);
-    //printf("ControlChange 0.0 %d 128 %d\n", note, new_volume+1);
-    //printf("        StringDamping   0.000100 2 %d\n", 127-new_volume);
-    fflush(stdout);
-    cur_volume = new_volume;
   }
 }
 
@@ -200,10 +204,10 @@ int callback(int device, Finger *data, int nFingers, double timestamp, int frame
       note_off(i);
     }
     else if (notes[i] && notes[i] != last_notes[i]) {
-      volume(i,notes[i]);
       if (!last_notes[i]) {
 	note_on(i);
       }
+      aftertouch(i,notes[i]);
     }
 
     last_notes[i] = notes[i];
