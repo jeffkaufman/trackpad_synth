@@ -59,11 +59,11 @@ MIDIEndpointRef midiendpoint;
 void compose_midi(char actionType, int noteNo, Byte* msg) {
 
   if (actionType == 'O') { /* on */
-    msg[0] = 0x80;
+    msg[0] = 0x90;
     msg[2] = 82;
   }
   else if (actionType == 'o') { /* off */
-    msg[0] = 0x90;
+    msg[0] = 0x80;
     msg[2] = 0;
   }
 
