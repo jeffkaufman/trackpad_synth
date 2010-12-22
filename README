@@ -49,6 +49,9 @@ Once you have either MIDI or SKINI working, in this directory run either:
   # for skini
   make runskini
 
+  # for midi, simple
+  just double click on the trackcontrol command line program
+  
 Kill it with control C when you're done.  It puts midi on channel 3,
 so that's the one you'd twiddle settings for.
 
