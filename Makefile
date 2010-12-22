@@ -3,7 +3,7 @@ KEY=D
 V=12
 
 runskini: trackcontroller
-	./trackcontroller ${KEY} | stk-4.4.2/projects/demo/demo ${I} -n ${V} -or -ip 
+	./trackcontroller -s ${KEY} | stk-4.4.2/projects/demo/demo ${I} -n ${V} -or -ip 
 
 runsolo: trackcontroller
 	./trackcontroller
@@ -14,4 +14,10 @@ trackcontroller: trackcontroller.m
 	$^ -o $@ -std=c99
 
 runmidi: trackcontroller
-	./trackcontroller -m ${KEY}
+	./trackcontroller ${KEY}
+
+bundle: trackcontroller
+	rm -r TrackController.app || echo "no app to remove"
+	mkdir TrackController.app
+	cp trackcontroller TrackController.app
+	cp Info.plist TrackController.app

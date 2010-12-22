@@ -52,7 +52,7 @@ void MTDeviceStart(MTDeviceRef, int); // thanks comex
 
 int notes[MAX_NOTES];
 int last_notes[MAX_NOTES];
-int midi = 0;
+int midi = 1;
 MIDIClientRef midiclient;
 MIDIEndpointRef midiendpoint;
 
@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
   }
 
   if (argc >= 2 && argv[1][0] == '-') {
-    midi = argv[1][1] == 'm';
+    midi = argv[1][1] != 's';
     argv++;
     argc--;
   }
