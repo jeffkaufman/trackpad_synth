@@ -2,6 +2,26 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <CoreFoundation/CoreFoundation.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <unistd.h>
+#include <CoreMIDI/MIDIServices.h>
+#include <CoreAudio/HostTime.h>
+
+#define BUF_SIZE 256
+
+
+void die(char *errmsg) {
+  printf("%s\n",errmsg);
+  exit(-1);
+}
+
+void attempt(OSStatus result, char* errmsg) {
+  if (result != noErr) {
+    die(errmsg);
+  }
+}
 
 #define MAX_NOTES 128
 #define N_OCTAVES 4
@@ -32,25 +52,86 @@ void MTDeviceStart(MTDeviceRef, int); // thanks comex
 
 int notes[MAX_NOTES];
 int last_notes[MAX_NOTES];
+int midi = 0;
+MIDIClientRef midiclient;
+MIDIEndpointRef midiendpoint;
+
+void compose_midi(char actionType, int noteNo, Byte* msg) {
+
+  if (actionType == 'O') { /* on */
+    msg[0] = 0x80;
+    msg[2] = 82;
+  }
+  else if (actionType == 'o') { /* off */
+    msg[0] = 0x90;
+    msg[2] = 0;
+  }
+
+  Byte channel = 2;
+  msg[0] += channel;
+  
+  msg[1] = noteNo;
+    
+}
+
+
+#define PACKET_BUF_SIZE (3+64) /* 3 for message, 32 for structure vars */
+void send_midi(char actionType, int noteNo) {
+  Byte buffer[PACKET_BUF_SIZE];
+  Byte msg[3];
+  compose_midi(actionType, noteNo, msg);
+
+  MIDIPacketList *packetList = (MIDIPacketList*) buffer;
+  MIDIPacket *curPacket = MIDIPacketListInit(packetList);
+
+  printf("%x %x %x\n", msg[0], msg[1], msg[2]);
+
+  curPacket = MIDIPacketListAdd(packetList,
+				PACKET_BUF_SIZE,
+				curPacket,
+				AudioGetCurrentHostTime(),
+				3,
+				msg);
+  if (!curPacket) {
+      die("packet list allocation failed");
+  }
+  
+  attempt(MIDIReceived(midiendpoint, packetList), "error sending midi");
+}
+
 
 void note_on(int note) {
-  printf("NoteOn          0.0 2 %d 82\n", note);
-  fflush(stdout);
+  if (midi) {
+    send_midi('O', note);
+  }
+  else {
+    printf("NoteOn          0.0 %d %d %d\n", note, note, 82);
+    fflush(stdout);
+  }
 }
 
 void note_off(int note) {
-  printf("NoteOff         0.0 2 %d 0\n", note);
-  fflush(stdout);
+  if (midi) {
+    send_midi('o', note);
+  }
+  else {
+    printf("NoteOff         0.0 %d %d 0\n", note, note);
+    fflush(stdout);
+  }
 }
 
-/* amt should be between 0 and 1 */
 int cur_volume = 64;
-void volume(float amt) {
-  int new_volume = (int)(amt*128);
+void volume(int note, int new_volume) {
+  if (new_volume > 127) {
+    new_volume = 127;
+  }
+
   if (cur_volume != new_volume) {
-    /*printf("Volume        0.0 2 %d 0\n", new_volume);*/
-    printf("        StringDamping   0.000100 2 %d\n", 127-new_volume);
+    //printf("Volume        0.0 2 %d\n", new_volume+1);
+    //printf("ControlChange 0.0 %d 128 %d\n", note, new_volume+1);
+    //printf("        StringDamping   0.000100 2 %d\n", 127-new_volume);
     fflush(stdout);
+    cur_volume = new_volume;
   }
 }
 
@@ -93,29 +174,36 @@ int scale_note(float x) {
   return n+base_pitch;
 }
 
-/* returns 0-127 where 69 is A440.
- * returns -1 on failure */
-int do_note(Finger *f) {
+void do_note(Finger *f) {
   float x = f->normalized.pos.x;
   float y = f->normalized.pos.y;
 
-  int octave = (int)(N_OCTAVES * y)-2;
+  float v_x = f->normalized.vel.x;
+  float v_y = f->normalized.vel.y;
+  float v = f->size;
 
-  notes[scale_note(x)+12*octave] = 1;
+  int octave = (int)(N_OCTAVES * y)-4;
+
+  notes[scale_note(x)+12*octave] = v*128;
+
+  //  notes[base_pitch+(int)(x*7+(int)(y*4)*7)-12]=1;
 }
 
 int callback(int device, Finger *data, int nFingers, double timestamp, int frame) {
-  int note;
+
   for (int i=0; i<nFingers; i++) {
-    note = do_note(&data[i]);
+    do_note(&data[i]);
   }
 
   for (int i=0 ; i < MAX_NOTES ; i++) {
     if (last_notes[i] && !notes[i]) {
       note_off(i);
     }
-    else if (notes[i] && !last_notes[i]) {
-      note_on(i);
+    else if (notes[i] && notes[i] != last_notes[i]) {
+      volume(i,notes[i]);
+      if (!last_notes[i]) {
+	note_on(i);
+      }
     }
 
     last_notes[i] = notes[i];
@@ -126,9 +214,25 @@ int callback(int device, Finger *data, int nFingers, double timestamp, int frame
 }
 
 int main(int argc, char** argv) {
+
+  attempt(MIDIClientCreate( CFStringCreateWithCString( NULL, "touchpad", kCFStringEncodingASCII ),
+			    NULL, NULL, &midiclient),
+	  "creating OS-X MIDI client object." );
+
+  attempt(MIDISourceCreate(midiclient, 
+			   CFStringCreateWithCString( NULL, "touchpad", kCFStringEncodingASCII ),
+			   &midiendpoint),
+	  "creating OS-X virtual MIDI source." );
+
   for (int i = 0 ; i < MAX_NOTES; i++) {
     notes[i] = 0;
     last_notes[i] = 0;
+  }
+
+  if (argc >= 2 && argv[1][0] == '-') {
+    midi = argv[1][1] == 'm';
+    argv++;
+    argc--;
   }
 
   if (argc == 2) {
@@ -154,8 +258,12 @@ int main(int argc, char** argv) {
   MTDeviceRef dev = MTDeviceCreateDefault();
   MTRegisterContactFrameCallback(dev, callback);
   MTDeviceStart(dev, 0);
-  printf("Ctrl-C to abort\n");
+  //printf("Ctrl-C to abort\n");
   sleep(-1);
+
+  MIDIClientDispose(midiclient);
+  MIDIEndpointDispose(midiendpoint);
+
   return 0;
 }
 
