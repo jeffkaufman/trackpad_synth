@@ -11,6 +11,8 @@
 
 #define BUF_SIZE 256
 
+/* remove this to send all notes out with a velocity of 82 */
+#define USE_VELOCITY
 
 void die(char *errmsg) {
   printf("%s\n",errmsg);
@@ -42,6 +44,12 @@ typedef struct {
   float unk2;
 } Finger;
 
+typedef struct {
+  int timeOn;
+  int val;
+  int lastval;
+} Note;
+
 typedef void *MTDeviceRef;
 typedef int (*MTContactCallbackFunction)(int,Finger*,int,double,int);
 
@@ -49,9 +57,7 @@ MTDeviceRef MTDeviceCreateDefault();
 void MTRegisterContactFrameCallback(MTDeviceRef, MTContactCallbackFunction);
 void MTDeviceStart(MTDeviceRef, int); // thanks comex
 
-
-int notes[MAX_NOTES];
-int last_notes[MAX_NOTES];
+Note notes[MAX_NOTES];
 int midi = 1;
 MIDIClientRef midiclient;
 MIDIEndpointRef midiendpoint;
@@ -119,19 +125,19 @@ void aftertouch(int note, int amt) {
   }
 }
 
-void note_on(int note) {
+void note_on(int note, int val) {
   if (midi) {
-    send_midi('O', note, -1);
+    send_midi('O', note, val);
   }
   else {
-    printf("NoteOn          0.0 %d %d %d\n", note, note, 82);
+    printf("NoteOn          0.0 %d %d %d\n", note, note, val);
     fflush(stdout);
   }
 }
 
-void note_off(int note) {
+void note_off(int note, int val) {
   if (midi) {
-    send_midi('o', note, -1);
+    send_midi('o', note, val);
   }
   else {
     printf("NoteOff         0.0 %d %d 0\n", note, note);
@@ -186,13 +192,12 @@ void do_note(Finger *f) {
   float v_y = f->normalized.vel.y;
   float v = f->size;
 
-  int octave = (int)(N_OCTAVES * y)-4;
+  int octave = (int)(N_OCTAVES * y * 2 + 1)/2 - 3;
 
-  notes[scale_note(x)+12*octave] = v*128;
-
-  //  notes[base_pitch+(int)(x*7+(int)(y*4)*7)-12]=1;
+  notes[scale_note(x)+12*octave].val = v*128;
 }
 
+#define MAX_TOUCH_LATENCY 6
 int callback(int device, Finger *data, int nFingers, double timestamp, int frame) {
 
   for (int i=0; i<nFingers; i++) {
@@ -200,19 +205,48 @@ int callback(int device, Finger *data, int nFingers, double timestamp, int frame
   }
 
   for (int i=0 ; i < MAX_NOTES ; i++) {
-    if (last_notes[i] && !notes[i]) {
-      note_off(i);
+
+
+#ifdef USE_VELOCITY
+
+    if (notes[i].lastval && !notes[i].val) {
+      note_off(i, -1);
+      notes[i].timeOn = 0;
     }
-    else if (notes[i] && notes[i] != last_notes[i]) {
-      if (!last_notes[i]) {
-	note_on(i);
+    else if (notes[i].val) {
+      if (notes[i].timeOn != -1) {
+	notes[i].timeOn += 1;
+	if (notes[i].lastval && 
+	    (notes[i].timeOn == MAX_TOUCH_LATENCY ||
+	     notes[i].val < notes[i].lastval)) {
+	  note_on(i, notes[i].val);
+	  notes[i].timeOn = -1;
+	}
       }
-      aftertouch(i,notes[i]);
+      else if (notes[i].val != notes[i].lastval) {
+	aftertouch(i,notes[i].val);
+      }
     }
 
-    last_notes[i] = notes[i];
-    notes[i] = 0;
+#else
+
+    if (notes[i].lastval && !notes[i].val) {
+      note_off(i, notes[i].lastval);
+    }
+    else if (notes[i].val && notes[i].val != notes[i].lastval) {
+      if (!notes[i].lastval) {
+	note_on(i, -1);
+      }
+      aftertouch(i,notes[i].val);
+    }
+
+#endif
+
+    notes[i].lastval = notes[i].val;
+    notes[i].val = 0; /* will be overwritten in do_note if note is actually on */
   }
+
+
 
   return 0;
 }
@@ -229,8 +263,9 @@ int main(int argc, char** argv) {
 	  "creating OS-X virtual MIDI source." );
 
   for (int i = 0 ; i < MAX_NOTES; i++) {
-    notes[i] = 0;
-    last_notes[i] = 0;
+    notes[i].val = 0;
+    notes[i].lastval = 0;
+    notes[i].timeOn = 0;
   }
 
   if (argc >= 2 && argv[1][0] == '-') {
