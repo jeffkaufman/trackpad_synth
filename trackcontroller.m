@@ -11,9 +11,46 @@
 
 #define BUF_SIZE 256
 
-int use_sidevolume = 0;
-int use_velocity = 0;
-int n_octaves = 5;
+int use_sidevolume = 0; /* does the side of the trackpad control volume? */
+int use_velocity = 0; /* does how hard you hit notes matter? */
+int n_octaves = 5; /* how many octaves on the trackpad? */
+int octave_shift = 3; /* how far lower than the top of our range should we be at? */
+int midi = 1; /* should we use midi? */
+int send_aftertouch = 0; /* send aftertouch messages */
+int send_channel_pressure = 0; /* send channel pressure messages */
+int send_channel_volume = 0; /* send channel pressure as a volume message */
+int channel = 3; /* which channel (1-16) to send on) */
+void usage() {
+  printf("Usage: trackcontroller [options]\n\n");
+
+  printf("Options:\n");
+  printf("  -s        Send SKINI to stdout instead of MIDI from a\n");
+  printf("            virtual source.\n");
+  printf("  -sv       Use the far left of the controller as a\n");
+  printf("            volume control.\n");
+  printf("  -k[KEY]   Play in the given key.  Allowable keys are\n");
+  printf("            'A'-'G' followed by an optional '#' or 'b'.\n");
+  printf("            Default is D.\n");
+  printf("  -o[N]     Divide the trackpad vertically into this many\n");
+  printf("            octaves.  Default is 5.\n");
+  printf("  -os[N]    Octave Shift: how far down to shift from the\n");
+  printf("            top of our range.  Default is 3.\n");
+  printf("  -v        Use velocity.  When pressing keys, set midi\n");
+  printf("            velocity to the finger width detected on the\n");
+  printf("            trackpad.\n");
+  printf("  -a        Send aftertouch midi messages based on how fat\n");
+  printf("            each finger is\n");
+  printf("  -c[N]     Send on channel N.  Default is 3.\n");
+  printf("  -cp       Send channel pressure messages based on how fat\n");
+  printf("            all the fingers are on average,\n");
+  printf("  -cv       Fake channel pressure using volume instead.\n");
+  printf("\n");
+  printf("Many options only work with MIDI.\n");
+  printf("\n");
+  printf("If you want to play in non-major modes, use some music theory:\n");
+  printf("pick an appropriate major scale and scale degree to start on.\n\n");
+
+}
 
 void die(char *errmsg) {
   printf("%s\n",errmsg);
@@ -58,7 +95,6 @@ void MTRegisterContactFrameCallback(MTDeviceRef, MTContactCallbackFunction);
 void MTDeviceStart(MTDeviceRef, int); // thanks comex
 
 Note notes[MAX_NOTES];
-int midi = 1;
 MIDIClientRef midiclient;
 MIDIEndpointRef midiendpoint;
 
@@ -91,9 +127,7 @@ void compose_midi(char actionType, int noteNo, int v, Byte* msg) {
     }
     msg[2] = v;
   }
-
-  Byte channel = 2;
-  msg[0] += channel;
+  msg[0] += ((channel-1) & 0xFF);
   
   msg[1] = noteNo;
     
@@ -135,7 +169,7 @@ void volume(int amt) {
 }
 
 void aftertouch(int note, int amt) {
-  if (midi) {
+  if (midi && send_aftertouch) {
     send_midi('A', note, amt);
   }
   else {
@@ -229,7 +263,7 @@ void do_note(Finger *f) {
   float v_y = f->normalized.vel.y;
   float v = f->size;
 
-  int octave = (int)((n_octaves-1) * y * 2 + 1)/2 - 3;
+  int octave = (int)((n_octaves-1) * y * 2 + 1)/2 - octave_shift;
 
   notes[scale_note(x)+12*octave].val = v*128;
 }
@@ -278,39 +312,30 @@ int callback(int device, Finger *data, int nFingers, double timestamp, int frame
     notes[i].val = 0; /* will be overwritten in do_note if note is actually on */
   }
 
-  int pressure_sum = 0;
-  int notes_on = 0;
-  for (int i = 0 ; i < MAX_NOTES-1 ; i++) {
-    if (notes[i].lastval) {
-      pressure_sum += notes[i].lastval;
-      notes_on += 1;
+  if (send_channel_pressure || send_channel_volume) {
+    int pressure_sum = 0;
+    int notes_on = 0;
+    for (int i = 0 ; i < MAX_NOTES-1 ; i++) {
+      if (notes[i].lastval) {
+	pressure_sum += notes[i].lastval;
+	notes_on += 1;
+      }
     }
-  }
-
-  if (notes_on) {
-    channel_pressure(pressure_sum / notes_on);
-    //volume(pressure_sum / notes_on);
+    
+    if (notes_on) {
+      if (send_channel_pressure) {
+	channel_pressure(pressure_sum / notes_on);
+      }
+      if (send_channel_volume) {
+	volume(pressure_sum / notes_on);
+      }
+    }
   }
 
   return 0;
 }
 
 int main(int argc, char** argv) {
-
-  attempt(MIDIClientCreate( CFStringCreateWithCString( NULL, "touchpad", kCFStringEncodingASCII ),
-			    NULL, NULL, &midiclient),
-	  "creating OS-X MIDI client object." );
-
-  attempt(MIDISourceCreate(midiclient, 
-			   CFStringCreateWithCString( NULL, "touchpad", kCFStringEncodingASCII ),
-			   &midiendpoint),
-	  "creating OS-X virtual MIDI source." );
-
-  for (int i = 0 ; i < MAX_NOTES; i++) {
-    notes[i].val = 0;
-    notes[i].lastval = 0;
-    notes[i].timeOn = 0;
-  }
 
   if (argc >= 2 && argv[1][0] == '-') {
     midi = argv[1][1] != 's';
@@ -336,6 +361,21 @@ int main(int argc, char** argv) {
     if (argv[1][0] && argv[1][1] == 'b') {
       base_pitch -= 1;
     }
+  }
+
+  attempt(MIDIClientCreate( CFStringCreateWithCString( NULL, "touchpad", kCFStringEncodingASCII ),
+			    NULL, NULL, &midiclient),
+	  "creating OS-X MIDI client object." );
+
+  attempt(MIDISourceCreate(midiclient, 
+			   CFStringCreateWithCString( NULL, "touchpad", kCFStringEncodingASCII ),
+			   &midiendpoint),
+	  "creating OS-X virtual MIDI source." );
+
+  for (int i = 0 ; i < MAX_NOTES; i++) {
+    notes[i].val = 0;
+    notes[i].lastval = 0;
+    notes[i].timeOn = 0;
   }
 
   MTDeviceRef dev = MTDeviceCreateDefault();
