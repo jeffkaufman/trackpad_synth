@@ -27,6 +27,10 @@ void usage() {
   printf("  -k [KEY]  Play in the given key.  Allowable keys are\n");
   printf("            'A'-'G' followed by an optional '#' or 'b'.\n");
   printf("            Default is D.\n");
+  printf("  -h        Harmonic minor mode\n");
+  printf("  -r        Relative minor mode\n");
+  printf("  -x        Mixolidian mode\n");
+  printf("  -K        A Klezmer mode (flat 2, sharp 6)\n");
   printf("  -S        Send SKINI to stdout instead of MIDI from a\n");
   printf("            virtual source.\n");
   printf("  -V        Use the far left of the controller as a\n");
@@ -342,7 +346,7 @@ int callback(int device, Finger *data, int nFingers, double timestamp, int frame
 int main(int argc, char** argv) {
 
   int optch;
-  while ((optch = getopt(argc, argv, "k:SVo:s:vac:pP")) != -1) {
+  while ((optch = getopt(argc, argv, "k:hrxKSVo:s:vac:pP")) != -1) {
     switch (optch) {
     case 'k':
       while (optarg[0] == ' ') {
@@ -369,6 +373,18 @@ int main(int argc, char** argv) {
 	  base_pitch -= 1;
 	}
       }
+      break;
+    case 'h': /* harmonic minor */
+      scale = "023579B";
+      break;
+    case 'r': /* relative minor */
+      scale = "023579A";
+      break;
+    case 'x': /* mixolidian */
+      scale = "024579A";
+      break;
+    case 'K': /* klezmer */
+      scale = "014578B";
       break;
     case 'S':
       midi = 0;
@@ -430,7 +446,7 @@ int main(int argc, char** argv) {
     notes[i].lastval = 0;
     notes[i].timeOn = 0;
   }
-  volume(120);
+  volume(100);
 
   MTDeviceRef dev = MTDeviceCreateDefault();
   MTRegisterContactFrameCallback(dev, callback);
