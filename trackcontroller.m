@@ -11,8 +11,9 @@
 
 #define BUF_SIZE 256
 
-/* remove this to send all notes out with a velocity of 82 */
-#define USE_VELOCITY
+int use_sidevolume = 0;
+int use_velocity = 0;
+int n_octaves = 5;
 
 void die(char *errmsg) {
   printf("%s\n",errmsg);
@@ -26,7 +27,6 @@ void attempt(OSStatus result, char* errmsg) {
 }
 
 #define MAX_NOTES 128
-#define N_OCTAVES 4
 
 typedef struct { float x,y; } mtPoint;
 typedef struct { mtPoint pos,vel; } mtReadout;
@@ -76,10 +76,18 @@ void compose_midi(char actionType, int noteNo, int v, Byte* msg) {
     msg[0] = 0xA0;
     msg[2] = 82;
   }
+  else if (actionType == 'C') { /* channel pressure */
+    msg[0] = 0xD0;
+    msg[2] = 0;
+  }    
+  else if (actionType == 'V') { /* volume */
+    msg[0] = 0xB0;
+    msg[2] = 0;
+  }
 
   if (v != -1) {
-    if (v > 127) {
-      v = 127;
+    if (v > MAX_NOTES) {
+      v = MAX_NOTES-1;
     }
     msg[2] = v;
   }
@@ -107,7 +115,7 @@ void send_midi(char actionType, int noteNo, int v) {
 				PACKET_BUF_SIZE,
 				curPacket,
 				AudioGetCurrentHostTime(),
-				3,
+				actionType == 'C' ? 2 : 3,
 				msg);
   if (!curPacket) {
       die("packet list allocation failed");
@@ -116,9 +124,28 @@ void send_midi(char actionType, int noteNo, int v) {
   attempt(MIDIReceived(midiendpoint, packetList), "error sending midi");
 }
 
+void volume(int amt) {
+  if (midi) {
+    send_midi('V', 7 /* coarse volume */, amt);
+    //send_midi('V', 39 /* fine volume */, amt);
+  }
+  else {
+    /* unsupported */
+  }
+}
+
 void aftertouch(int note, int amt) {
   if (midi) {
     send_midi('A', note, amt);
+  }
+  else {
+    /* unsupported */
+  }
+}
+
+void channel_pressure(int amt) {
+  if (midi) {
+    send_midi('C', amt, -1);
   }
   else {
     /* unsupported */
@@ -188,11 +215,21 @@ void do_note(Finger *f) {
   float x = f->normalized.pos.x;
   float y = f->normalized.pos.y;
 
+  if (use_sidevolume) {
+    if (x < 1.0/20) {
+      volume(y*(MAX_NOTES-1));
+      return;
+    }
+    else {
+      x = x*19.0/20 + 1.0/20;
+    }
+  }
+
   float v_x = f->normalized.vel.x;
   float v_y = f->normalized.vel.y;
   float v = f->size;
 
-  int octave = (int)(N_OCTAVES * y * 2 + 1)/2 - 3;
+  int octave = (int)((n_octaves-1) * y * 2 + 1)/2 - 3;
 
   notes[scale_note(x)+12*octave].val = v*128;
 }
@@ -205,48 +242,55 @@ int callback(int device, Finger *data, int nFingers, double timestamp, int frame
   }
 
   for (int i=0 ; i < MAX_NOTES ; i++) {
-
-
-#ifdef USE_VELOCITY
-
-    if (notes[i].lastval && !notes[i].val) {
-      note_off(i, -1);
-      notes[i].timeOn = 0;
-    }
-    else if (notes[i].val) {
-      if (notes[i].timeOn != -1) {
-	notes[i].timeOn += 1;
-	if (notes[i].lastval && 
-	    (notes[i].timeOn == MAX_TOUCH_LATENCY ||
-	     notes[i].val < notes[i].lastval)) {
-	  note_on(i, notes[i].val);
-	  notes[i].timeOn = -1;
+    if (use_velocity) {
+      if (notes[i].lastval && !notes[i].val) {
+	note_off(i, -1);
+	notes[i].timeOn = 0;
+      }
+      else if (notes[i].val) {
+	if (notes[i].timeOn != -1) {
+	  notes[i].timeOn += 1;
+	  if (notes[i].lastval && 
+	      (notes[i].timeOn == MAX_TOUCH_LATENCY ||
+	       notes[i].val < notes[i].lastval)) {
+	    note_on(i, notes[i].val);
+	    notes[i].timeOn = -1;
+	  }
+	}
+	else if (notes[i].val != notes[i].lastval) {
+	  aftertouch(i,notes[i].val);
 	}
       }
-      else if (notes[i].val != notes[i].lastval) {
+    }
+    else { /* no velocity */
+      if (notes[i].lastval && !notes[i].val) {
+	note_off(i, notes[i].lastval);
+      }
+      else if (notes[i].val && notes[i].val != notes[i].lastval) {
+	if (!notes[i].lastval) {
+	  note_on(i, -1);
+	}
 	aftertouch(i,notes[i].val);
       }
     }
-
-#else
-
-    if (notes[i].lastval && !notes[i].val) {
-      note_off(i, notes[i].lastval);
-    }
-    else if (notes[i].val && notes[i].val != notes[i].lastval) {
-      if (!notes[i].lastval) {
-	note_on(i, -1);
-      }
-      aftertouch(i,notes[i].val);
-    }
-
-#endif
 
     notes[i].lastval = notes[i].val;
     notes[i].val = 0; /* will be overwritten in do_note if note is actually on */
   }
 
+  int pressure_sum = 0;
+  int notes_on = 0;
+  for (int i = 0 ; i < MAX_NOTES-1 ; i++) {
+    if (notes[i].lastval) {
+      pressure_sum += notes[i].lastval;
+      notes_on += 1;
+    }
+  }
 
+  if (notes_on) {
+    channel_pressure(pressure_sum / notes_on);
+    //volume(pressure_sum / notes_on);
+  }
 
   return 0;
 }
