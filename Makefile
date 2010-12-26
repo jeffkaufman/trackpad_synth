@@ -1,9 +1,7 @@
-I=Clarinet
 KEY=D
-V=12
 
 runskini: trackcontroller
-	./trackcontroller -s ${KEY} | stk-4.4.2/projects/demo/demo ${I} -n ${V} -or -ip 
+	./trackcontroller -S -k ${KEY} | stk-4.4.2/projects/demo/demo Clarinet -n 12 -or -ip 
 
 runsolo: trackcontroller
 	./trackcontroller
@@ -14,7 +12,7 @@ trackcontroller: trackcontroller.m
 	$^ -o $@ -std=c99
 
 runmidi: trackcontroller
-	./trackcontroller ${KEY}
+	./trackcontroller -k ${KEY}
 
 bundle: trackcontroller
 	rm -r TrackController.app || echo "no app to remove"

@@ -21,36 +21,40 @@ int send_channel_pressure = 0; /* send channel pressure messages */
 int send_channel_volume = 0; /* send channel pressure as a volume message */
 int channel = 3; /* which channel (1-16) to send on) */
 void usage() {
-  printf("Usage: trackcontroller [options]\n\n");
-
+  printf("Usage: trackcontroller [options]\n");
+  printf("\n");
   printf("Options:\n");
-  printf("  -s        Send SKINI to stdout instead of MIDI from a\n");
-  printf("            virtual source.\n");
-  printf("  -sv       Use the far left of the controller as a\n");
-  printf("            volume control.\n");
-  printf("  -k[KEY]   Play in the given key.  Allowable keys are\n");
+  printf("  -k [KEY]  Play in the given key.  Allowable keys are\n");
   printf("            'A'-'G' followed by an optional '#' or 'b'.\n");
   printf("            Default is D.\n");
-  printf("  -o[N]     Divide the trackpad vertically into this many\n");
+  printf("  -S        Send SKINI to stdout instead of MIDI from a\n");
+  printf("            virtual source.\n");
+  printf("  -V        Use the far left of the controller as a\n");
+  printf("            volume control.\n");
+  printf("  -o [N]    Divide the trackpad vertically into this many\n");
   printf("            octaves.  Default is 5.\n");
-  printf("  -os[N]    Octave Shift: how far down to shift from the\n");
+  printf("  -s [N]    Octave Shift: how far down to shift from the\n");
   printf("            top of our range.  Default is 3.\n");
   printf("  -v        Use velocity.  When pressing keys, set midi\n");
   printf("            velocity to the finger width detected on the\n");
   printf("            trackpad.\n");
   printf("  -a        Send aftertouch midi messages based on how fat\n");
   printf("            each finger is\n");
-  printf("  -c[N]     Send on channel N.  Default is 3.\n");
-  printf("  -cp       Send channel pressure messages based on how fat\n");
+  printf("  -c [N]    Send on channel N.  Default is 3.\n");
+  printf("  -p        Send channel pressure messages based on how fat\n");
   printf("            all the fingers are on average,\n");
-  printf("  -cv       Fake channel pressure using volume instead.\n");
+  printf("  -P        Fake channel pressure using volume instead.\n");
+  printf("\n");
+  printf("Example:\n");
+  printf("  # play in Ab, four octaves, faking channel pressure\n");
+  printf("  trackcontroller -k Ab -o 4 -P\n");
   printf("\n");
   printf("Many options only work with MIDI.\n");
   printf("\n");
   printf("If you want to play in non-major modes, use some music theory:\n");
   printf("pick an appropriate major scale and scale degree to start on.\n\n");
-
 }
+
 
 void die(char *errmsg) {
   printf("%s\n",errmsg);
@@ -337,29 +341,78 @@ int callback(int device, Finger *data, int nFingers, double timestamp, int frame
 
 int main(int argc, char** argv) {
 
-  if (argc >= 2 && argv[1][0] == '-') {
-    midi = argv[1][1] != 's';
-    argv++;
-    argc--;
-  }
-
-  if (argc == 2) {
-    if (argv[1][0] >= 'A' && argv[1][0] <= 'G') {
-      switch(argv[1][0]) {
-      case 'A': base_pitch = A440; break;
-      case 'B': base_pitch = A440+2; break;
-      case 'C': base_pitch = A440+3; break;
-      case 'D': base_pitch = A440+5; break;
-      case 'E': base_pitch = A440+7; break;
-      case 'F': base_pitch = A440+8; break;
-      case 'G': base_pitch = A440+10; break;
+  int optch;
+  while ((optch = getopt(argc, argv, "k:SVo:s:vac:pP")) != -1) {
+    switch (optch) {
+    case 'k':
+      while (optarg[0] == ' ') {
+	optarg++;
       }
-    }
-    if (argv[1][0] && argv[1][1] == '#') {
-      base_pitch += 1;
-    }
-    if (argv[1][0] && argv[1][1] == 'b') {
-      base_pitch -= 1;
+      if (optarg[0] >= 'A' && optarg[0] <= 'G') {
+	switch(optarg[0]) {
+	case 'A': base_pitch = A440; break;
+	case 'B': base_pitch = A440+2; break;
+	case 'C': base_pitch = A440+3; break;
+	case 'D': base_pitch = A440+5; break;
+	case 'E': base_pitch = A440+7; break;
+	case 'F': base_pitch = A440+8; break;
+	case 'G': base_pitch = A440+10; break;
+	default:
+	  printf("error: -k argument needs a key between A and G\n");
+	  return 0;
+	}
+
+	if (optarg[1] == '#') {
+	  base_pitch += 1;
+	}
+	if (optarg[1] == 'b') {
+	  base_pitch -= 1;
+	}
+      }
+      break;
+    case 'S':
+      midi = 0;
+      break;
+    case 'V':
+      use_sidevolume = 1;
+      break;
+    case 'o':
+      n_octaves = atoi(optarg);
+      if (n_octaves < 2 || n_octaves > 10) {
+	printf("error: -o argument needs number of octaves between 2 and 10\n");
+	return 0;
+      }
+      break;
+    case 's':
+      octave_shift = atoi(optarg);
+      if (octave_shift < 1 || octave_shift > 6) {
+	printf("error: -s argument needs number of octaves between 1 and 6\n");
+	return 0;
+      }
+      break;
+    case 'v':
+      use_velocity = 1;
+      break;
+    case 'a':
+      send_aftertouch = 1;
+      break;
+    case 'c':
+      channel = atoi(optarg);
+      if (channel < 1 || channel > 16) {
+	printf("error: -c argument needs channel between 1 and 16\n");
+	return 0;
+      }
+      break;
+    case 'p':
+      send_channel_pressure = 1;
+      break;
+    case 'P':
+      send_channel_volume = 1;
+      break;
+    case '?':
+    default:
+      usage();
+      return 0;
     }
   }
 
@@ -377,6 +430,7 @@ int main(int argc, char** argv) {
     notes[i].lastval = 0;
     notes[i].timeOn = 0;
   }
+  volume(120);
 
   MTDeviceRef dev = MTDeviceCreateDefault();
   MTRegisterContactFrameCallback(dev, callback);
