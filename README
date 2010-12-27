@@ -44,7 +44,8 @@ Put the stk folder paralell to our test.m and Makefile.
 Once you have either MIDI or SKINI working, in this directory run either:
 
   # for midi
-  make runmidi
+  make
+  ./trackcontroller [options]
 
   # for skini
   make runskini
@@ -53,18 +54,48 @@ Once you have either MIDI or SKINI working, in this directory run either:
   just double click on the trackcontrol command line program
   
 Kill it with control C when you're done.  It puts midi on channel 3,
-so that's the one you'd twiddle settings for.
+so that's the one you'd twiddle settings for.  Options are:
 
+  -k [KEY]  Play in the given key.  Allowable keys are
+            'A'-'G' followed by an optional '#' or 'b'.
+            Default is D.
+  -h        Harmonic minor mode
+  -r        Relative minor mode
+  -x        Mixolidian mode
+  -K        A Klezmer mode (flat 2, sharp 6)
+  -S        Send SKINI to stdout instead of MIDI from a
+            virtual source.
+  -V        Use the far left of the controller as a
+            volume control.
+  -o [N]    Divide the trackpad vertically into this many
+            octaves.  Default is 5.
+  -s [N]    Octave Shift: how far down to shift from the
+            top of our range.  Default is 3.
+  -v        Use velocity.  When pressing keys, set midi
+            velocity to the finger width detected on the
+            trackpad.
+  -a        Send aftertouch midi messages based on how fat
+            each finger is
+  -c [N]    Send on channel N.  Default is 3.
+  -p        Send channel pressure messages based on how fat
+            all the fingers are on average,
+  -P        Fake channel pressure using volume instead.
+
+(run "./trackcontroller -u" for the most up to date usage info)
 
 Usage
 -----
 
-There are 4 rows (N_OCTAVES) each of which has a major scale (change
-'scale') of 7 notes.  It gives polyphonic skini, but demo is
-monophonic so you don't hear that.  I need to figure out a monophonic
-skini reading program.
+There are 5 rows (-o option) each of which has a major scale (change
+'scale') of 7 notes.  It's polyphonic, so move your fingers around.
+If using midi output, it can do velocity, aftertouch, channel
+pressure, and a kind of faking channel pressure by setting the volume,
+all depending on how much of your finger is in contact with the pad
+(and if your midi synthesizer supports it).  These are off be default
+and can be enabled with the -v, -a, -p, or -P options.
 
-
+If you don't want a major scale, the -h, -r, -x, and -K options choose
+other scales; see above.
 
 Misc
 ----
@@ -76,5 +107,3 @@ For writing midi output I used the source of vmpk as a guide:
   http://vmpk.sourceforge.net/
 
 All code gpl
-
-
