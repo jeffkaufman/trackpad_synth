@@ -28,7 +28,7 @@ void usage() {
   printf("            'A'-'G' followed by an optional '#' or 'b'.\n");
   printf("            Default is D.\n");
   printf("  -h        Harmonic minor mode\n");
-  printf("  -r        Relative minor mode\n");
+  printf("  -r        Relative/natural minor mode\n");
   printf("  -x        Mixolidian mode\n");
   printf("  -K        A Klezmer mode (flat 2, sharp 6)\n");
   printf("  -S        Send SKINI to stdout instead of MIDI from a\n");
