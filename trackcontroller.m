@@ -27,10 +27,12 @@ void usage() {
   printf("  -k [KEY]  Play in the given key.  Allowable keys are\n");
   printf("            'A'-'G' followed by an optional '#' or 'b'.\n");
   printf("            Default is D.\n");
-  printf("  -h        Harmonic minor mode\n");
+  printf("  -H        Harmonic minor mode\n");
   printf("  -r        Relative/natural minor mode\n");
   printf("  -x        Mixolidian mode\n");
   printf("  -K        A Klezmer mode (flat 2, sharp 6)\n");
+  printf("  -5        Pentatonic scale\n");
+  printf("  -C [nnn]  Specify scale (ex: '024579B')\n");
   printf("  -S        Send SKINI to stdout instead of MIDI from a\n");
   printf("            virtual source.\n");
   printf("  -V        Use the far left of the controller as a\n");
@@ -48,6 +50,7 @@ void usage() {
   printf("  -p        Send channel pressure messages based on how fat\n");
   printf("            all the fingers are on average,\n");
   printf("  -P        Fake channel pressure using volume instead.\n");
+  printf("  -h        Print this usage.\n");
   printf("\n");
   printf("Example:\n");
   printf("  # play in Ab, four octaves, faking channel pressure\n");
@@ -236,7 +239,7 @@ int base_pitch = A440;
 char *scale = "024579B";
 int scale_note(float x) {
   int n;
-  switch(scale[(int)(x*7)]) {
+  switch(scale[(int)(x*strlen(scale))]) {
   case '0': n = 0; break;
   case '1': n = 1; break;
   case '2': n = 2; break;
@@ -346,7 +349,7 @@ int callback(int device, Finger *data, int nFingers, double timestamp, int frame
 int main(int argc, char** argv) {
 
   int optch;
-  while ((optch = getopt(argc, argv, "k:hrxKSVo:s:vac:pP")) != -1) {
+  while ((optch = getopt(argc, argv, "hk:HrxK5C:SVo:s:vac:pP")) != -1) {
     switch (optch) {
     case 'k':
       while (optarg[0] == ' ') {
@@ -374,7 +377,7 @@ int main(int argc, char** argv) {
 	}
       }
       break;
-    case 'h': /* harmonic minor */
+    case 'H': /* harmonic minor */
       scale = "023579B";
       break;
     case 'r': /* relative minor */
@@ -385,6 +388,13 @@ int main(int argc, char** argv) {
       break;
     case 'K': /* klezmer */
       scale = "014578B";
+      break;
+    case '5': /* pentatonic */
+      scale = "0357A";
+      break;
+    case 'C': /* specified scale */
+      scale = malloc(strlen(optarg));
+      strcpy(scale, optarg);
       break;
     case 'S':
       midi = 0;
@@ -426,6 +436,7 @@ int main(int argc, char** argv) {
       send_channel_volume = 1;
       break;
     case '?':
+    case 'h':
     default:
       usage();
       return 0;

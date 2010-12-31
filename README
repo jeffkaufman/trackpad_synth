@@ -56,13 +56,18 @@ Once you have either MIDI or SKINI working, in this directory run either:
 Kill it with control C when you're done.  It puts midi on channel 3,
 so that's the one you'd twiddle settings for.  Options are:
 
+Usage: trackcontroller [options]
+
+Options:
   -k [KEY]  Play in the given key.  Allowable keys are
             'A'-'G' followed by an optional '#' or 'b'.
             Default is D.
-  -h        Harmonic minor mode
-  -r        Relative minor mode
+  -H        Harmonic minor mode
+  -r        Relative/natural minor mode
   -x        Mixolidian mode
   -K        A Klezmer mode (flat 2, sharp 6)
+  -5        Pentatonic scale
+  -C [nnn]  Specify scale (ex: '024579B')
   -S        Send SKINI to stdout instead of MIDI from a
             virtual source.
   -V        Use the far left of the controller as a
@@ -80,8 +85,9 @@ so that's the one you'd twiddle settings for.  Options are:
   -p        Send channel pressure messages based on how fat
             all the fingers are on average,
   -P        Fake channel pressure using volume instead.
+  -h        Print this usage.
 
-(run "./trackcontroller -u" for the most up to date usage info)
+(run "./trackcontroller -h" for the most up to date usage info)
 
 Usage
 -----
@@ -95,7 +101,23 @@ all depending on how much of your finger is in contact with the pad
 and can be enabled with the -v, -a, -p, or -P options.
 
 If you don't want a major scale, the -h, -r, -x, and -K options choose
-other scales; see above.
+other scales; see above.  You can also specify arbitrary scales with
+-C.  The format is:
+
+  ./trackcontroller -k C -C 0123456789AB
+
+This would make a fully chromatic trackpad starting on C (with even
+divisions).  To leave notes out, don't include their numbers:
+
+  ./trackcontroller -k C -C 024579B
+
+This would include the notes of the major scale.  You can make
+sections wider by repeating them:
+
+  ./trackcontroller -k C -C 0057
+
+This would divide the pad with the left half sounding 'C' and the
+right half divided into 'F' and 'G'.
 
 Misc
 ----
