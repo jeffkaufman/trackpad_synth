@@ -4,7 +4,6 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreMIDI/MIDIServices.h>
 #include <CoreAudio/HostTime.h>
-#include <unistd.h>
 
 int tml_use_sidevolume = 0; /* does the side of the trackpad control volume? */
 int tml_use_velocity = 0; /* does how hard you hit notes matter? */
@@ -285,7 +284,6 @@ void tml_setup_trackpad() {
   MTDeviceRef dev = MTDeviceCreateDefault();
   MTRegisterContactFrameCallback(dev, tml_callback);
   MTDeviceStart(dev, 0);
-  sleep(-1);
 }
 
 void tml_setup_midi() {
@@ -313,7 +311,7 @@ void tml_setup_general() {
 void tml_setup() {
   tml_setup_general();
   tml_setup_midi();
-  tml_setup_trackpad(); /* doesn't return */
+  tml_setup_trackpad();
 }
 
 #endif

@@ -144,6 +144,7 @@ int main(int argc, char** argv) {
       return 0;
     }
   }
-  tml_setup();  /* doesn't return */
+  tml_setup();
+  sleep(-1);
   return 0;
 }
