@@ -1,6 +1,6 @@
 KEY=D
 
-trackcontroller: trackcontroller.m
+trackcontroller: trackcontroller.m trackmidilib.h
 	gcc -F/System/Library/PrivateFrameworks -framework MultitouchSupport \
 	-framework CoreMIDI -framework CoreFoundation -framework CoreAudio \
 	$^ -o $@ -std=c99
@@ -13,9 +13,3 @@ runsolo: trackcontroller
 
 runmidi: trackcontroller
 	./trackcontroller -k ${KEY}
-
-bundle: trackcontroller
-	rm -r TrackController.app || echo "no app to remove"
-	mkdir TrackController.app
-	cp trackcontroller TrackController.app
-	cp Info.plist TrackController.app
