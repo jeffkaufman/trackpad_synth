@@ -204,8 +204,8 @@ void tml_do_note(Finger *f) {
     }
   }
 
-  float v_x = f->normalized.vel.x;
-  float v_y = f->normalized.vel.y;
+  //float v_x = f->normalized.vel.x;
+  //float v_y = f->normalized.vel.y;
   float v = f->size;
 
   int octave = (int)((tml_n_octaves-1) * y * 2 + 1)/2 - tml_octave_shift;
