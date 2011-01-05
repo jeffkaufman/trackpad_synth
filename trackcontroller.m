@@ -49,6 +49,7 @@ void usage() {
 }
 
 int main(int argc, char** argv) {
+  tml_set_scale("024579B");
 
   int optch;
   while ((optch = getopt(argc, argv, "hk:HrxK5C:SVo:s:vac:pP")) != -1) {
@@ -80,23 +81,22 @@ int main(int argc, char** argv) {
       }
       break;
     case 'H': /* harmonic minor */
-      tml_scale = "023579B";
+      tml_set_scale("023579B");
       break;
     case 'r': /* relative minor */
-      tml_scale = "023579A";
+      tml_set_scale("023579A");
       break;
     case 'x': /* mixolidian */
-      tml_scale = "024579A";
+      tml_set_scale("024579A");
       break;
     case 'K': /* klezmer */
-      tml_scale = "014578B";
+      tml_set_scale("014578B");
       break;
     case '5': /* pentatonic */
-      tml_scale = "0357A";
+      tml_set_scale("0357A");
       break;
     case 'C': /* specified tml_scale */
-      tml_scale = malloc(strlen(optarg));
-      strcpy(tml_scale, optarg);
+      tml_set_scale(optarg);
       break;
     case 'S':
       tml_midi = 0;

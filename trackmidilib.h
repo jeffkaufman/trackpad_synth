@@ -169,23 +169,81 @@ void tml_note_off(int note, int val) {
 /* x should be beween 0 and 1 */
 #define TML_A440 69
 int tml_base_pitch = TML_A440; 
-char *tml_scale = "024579B";
-int tml_scale_note(float x) {
-  int n;
-  switch(tml_scale[(int)(x*strlen(tml_scale))]) {
-  case '0': n = 0; break;
-  case '1': n = 1; break;
-  case '2': n = 2; break;
-  case '3': n = 3; break;
-  case '4': n = 4; break;
-  case '5': n = 5; break;
-  case '6': n = 6; break;
-  case '7': n = 7; break;
-  case '8': n = 8; break;
-  case '9': n = 9; break;
-  case 'A': n = 10; break;
-  case 'B': n = 11; break;
+//char *tml_scale = 
+char tml_scale[32];
+int tml_on[12];
+
+
+int tml_interpret_scale_char(char c) {
+  switch(c) {
+  case '0': return 0;
+  case '1': return 1;
+  case '2': return 2;
+  case '3': return 3;
+  case '4': return 4;
+  case '5': return 5;
+  case '6': return 6;
+  case '7': return 7;
+  case '8': return 8;
+  case '9': return 9;
+  case 'A': return 10;
+  case 'B': return 11;
   }
+  return -1;
+}
+
+char tml_interpret_scale_int(int n) {
+  switch(n) {
+  case 0: return '0';
+  case 1: return '1';
+  case 2: return '2';
+  case 3: return '3';
+  case 4: return '4';
+  case 5: return '5';
+  case 6: return '6';
+  case 7: return '7';
+  case 8: return '8';
+  case 9: return '9';
+  case 10: return 'A';
+  case 11: return 'B';
+  }
+  return 'C';
+}
+
+
+void tml_recompute_scale()
+{
+  int scale_pos = 0;
+  for (int i = 0 ; i < 12 ; i++) {
+    if (tml_on[i]) {
+      tml_scale[scale_pos] = tml_interpret_scale_int(i);
+      scale_pos++;
+    }
+  }
+  tml_scale[scale_pos] = '\0';
+}
+
+void tml_recompute_tml_ons()
+{
+  for(int i = 0 ; i < 12 ; i++) {
+    tml_on[i] = 0;
+  }
+  for (char* cp = tml_scale ; *cp ; cp++) {
+    int n = tml_interpret_scale_char(*cp);
+    if (n != -1) {
+      tml_on[n] = 1;
+    }
+  }
+}
+
+void tml_set_scale(char* scale) {
+  strncpy(tml_scale, scale, 32);
+  tml_scale[31] = '\0';
+  tml_recompute_tml_ons();
+}
+
+int tml_scale_note(float x) {
+  int n = tml_interpret_scale_char(tml_scale[(int)(x*strlen(tml_scale))]);
   return n + tml_base_pitch;
 }
 
