@@ -4,8 +4,26 @@ Trackpad synth
 Program to generate SKINI or MIDI data from a macbook trackpad.
 
 
-Installation
-------------
+Binary Installation (use this if you're not sure)
+-------------------------------------------------
+
+Download the disk image for show leopard (10.6):
+
+  https://github.com/downloads/jeffkaufman/trackpad_synth/multitouch_midi_v1.dmg
+
+Open it, drag to applications.  Double click on it to run.
+
+You need something to turn my program's midi signals into sound.
+SimpleSynth is good:
+
+    http://notahat.com/simplesynth
+
+Download, install, run.  Once it's running, select "touchpad" under
+"MIDI Source" and you should hear this play!
+
+
+Source Installation
+-------------------
 
 Choose either MIDI or SKINI output.  MIDI lets you choose from more
 and better voices, SKINI lets you write new voices with the stanford
@@ -15,11 +33,7 @@ toolkit.
   MIDI
   ----
 
-You need something that can turn midi into sound.  SimpleSynth is good:
-
-  http://notahat.com/simplesynth
-
-Start it running.
+See the note on SimpleSynth above.
 
 
   SKINI
