@@ -103,5 +103,48 @@
 	tml_recompute_scale();
 }
 
+-(IBAction)scaleChanged:(id)sender {
+	char* s;
+	switch([sender indexOfSelectedItem]) {
+		case 0: /* major */
+			s = "024579B"; 
+			break;
+		case 1: /* mixolydian */
+			s = "024579A";
+			break;
+		case 2: /* relative minor */
+			s = "023579A";
+			break;
+		case 3: /* harmonic minor */
+			s = "023579B";
+			break;
+		case 4: /* pentatonic */
+			s = "0357A";
+			break;
+		case 5: /* klezmer */
+			s = "014578B";
+			break;
+		default:
+			break;
+	}
+	tml_set_scale(s);
+}
+
+-(IBAction)keyChanged:(id)sender {
+	tml_base_pitch = TML_A440 + [sender indexOfSelectedItem];
+}
+
+-(IBAction)channelChanged:(id)sender {
+	tml_channel = [sender indexOfSelectedItem]+1;
+}
+
+-(IBAction)octavesChanged:(id)sender {
+	tml_n_octaves = [sender indexOfSelectedItem]+2;
+}
+
+-(IBAction)octaveChanged:(id)sender {
+	tml_octave_shift = [sender indexOfSelectedItem];
+}
+
 
 @end

@@ -10,6 +10,6 @@
 int main(int argc, char *argv[])
 {
 	tml_setup();
-	tml_set_scale("0123456789AB");
+	tml_set_scale("024579B");
     return NSApplicationMain(argc,  (const char **) argv);
 }
