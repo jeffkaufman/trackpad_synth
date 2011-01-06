@@ -32,9 +32,7 @@
     IBOutlet id keyChanged;
     IBOutlet id octavesChanged;
 	IBOutlet id octaveChanged;
-    IBOutlet id channelChanged;
-	IBOutlet id scaleChanged;
-	
+    IBOutlet id channelChanged;	
 }
 -(IBAction)useVelocityClicked:(id)sender;
 -(IBAction)sendAftertouchClicked:(id)sender;
@@ -58,6 +56,5 @@
 -(IBAction)octavesChanged:(id)sender;
 -(IBAction)octaveChanged:(id)sender;
 -(IBAction)channelChanged:(id)sender;
--(IBAction)scaleChanged:(id)sender;
 
 @end
