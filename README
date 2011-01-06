@@ -7,7 +7,7 @@ Program to generate SKINI or MIDI data from a macbook trackpad.
 Binary Installation (use this if you're not sure)
 -------------------------------------------------
 
-Download the disk image for show leopard (10.6):
+Download the disk image for snow leopard (10.6):
 
   https://github.com/downloads/jeffkaufman/trackpad_synth/multitouch_midi_v1.dmg
 
