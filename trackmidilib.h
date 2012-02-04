@@ -10,6 +10,9 @@ int tml_use_velocity = 0; /* does how hard you hit notes matter? */
 int tml_n_octaves = 5; /* how many octaves on the trackpad? */
 int tml_octave_shift = 3; /* how far lower than the top of our range should we be at? */
 int tml_midi = 1; /* should we use midi? */
+int tml_skini = 0; /* should we use SKINI? */
+int tml_letters = 0; /* should we use letters? */
+int tml_twelve = 0; /* should we use the alternate twelve button arrangement? */
 int tml_send_aftertouch = 0; /* send aftertouch messages */
 int tml_send_channel_pressure = 0; /* send channel pressure messages */
 int tml_send_channel_volume = 0; /* send channel pressure as a volume message */
@@ -146,12 +149,47 @@ void tml_channel_pressure(int amt) {
   }
 }
 
+char letter(int note) {
+  switch (note % 12) {
+  case 0:
+    return 'C';
+  case 1:
+    return 'd';
+  case 2:
+    return 'D';
+  case 3:
+    return 'e';
+  case 4:
+    return 'E';
+  case 5:
+    return 'F';
+  case 6:
+    return 'g';
+  case 7:
+    return 'G';
+  case 8:
+    return 'a';
+  case 9:
+    return 'A';
+  case 10:
+    return 'b';
+  case 11:
+    return 'B';
+  }
+  return ' '; // not reached
+}
+
 void tml_note_on(int note, int val) {
   if (tml_midi) {
     tml_send_midi('O', note, val);
   }
   else {
-    printf("NoteOn          0.0 %d %d %d\n", note, note, val);
+    if (tml_skini) {
+      printf("NoteOn          0.0 %d %d %d\n", note, note, val);
+    }
+    else {
+      printf("%c", letter(note));
+    }
     fflush(stdout);
   }
 }
@@ -161,8 +199,10 @@ void tml_note_off(int note, int val) {
     tml_send_midi('o', note, val);
   }
   else {
-    printf("NoteOff         0.0 %d %d 0\n", note, note);
-    fflush(stdout);
+    if (tml_skini) {
+      printf("NoteOff         0.0 %d %d 0\n", note, note);
+      fflush(stdout);
+    }
   }
 }
 
@@ -251,23 +291,45 @@ void tml_do_note(Finger *f) {
   float x = f->normalized.pos.x;
   float y = f->normalized.pos.y;
 
-  if (tml_use_sidevolume) {
-    if (x < 1.0/20) {
-      tml_volume(y*(TML_MAX_NOTES-1));
-      return;
-    }
-    else {
-      x = x*19.0/20 + 1.0/20;
-    }
+  if (tml_twelve) {
+    int c = x*5;
+    int r = y*3;
+
+    int v = -1;
+    if (r == 0 && c == 0) { v = 0; }
+    else if (r == 0 && c == 1) { v = 1; }
+    else if (r == 0 && c == 2) { v = 2; }
+    else if (r == 0 && c == 3) { v = 3; }
+    else if (r == 0 && c == 4) { v = 4; }
+    else if (r == 1 && c == 4) { v = 5; }
+    else if (r == 2 && c == 4) { v = 6; }
+    else if (r == 2 && c == 3) { v = 7; }
+    else if (r == 2 && c == 2) { v = 8; }
+    else if (r == 2 && c == 1) { v = 9; }
+    else if (r == 2 && c == 0) { v = 10; }
+    else if (r == 1 && c == 0) { v = 11; }
+
+    if (v != -1) { tml_notes[v].val = 128; }
   }
+  else {
+    if (tml_use_sidevolume) {
+      if (x < 1.0/20) {
+        tml_volume(y*(TML_MAX_NOTES-1));
+        return;
+      }
+      else {
+        x = x*19.0/20 + 1.0/20;
+      }
+    }
+    
+    //float v_x = f->normalized.vel.x;
+    //float v_y = f->normalized.vel.y;
+    float v = f->size;
+    
+    int octave = (int)((tml_n_octaves-1) * y * 2 + 1)/2 - tml_octave_shift;
 
-  //float v_x = f->normalized.vel.x;
-  //float v_y = f->normalized.vel.y;
-  float v = f->size;
-
-  int octave = (int)((tml_n_octaves-1) * y * 2 + 1)/2 - tml_octave_shift;
-
-  tml_notes[tml_scale_note(x)+12*octave].val = v*128;
+    tml_notes[tml_scale_note(x)+12*octave].val = v*128;
+  }
 }
 
 #define TML_MAX_TOUCH_LATENCY 6

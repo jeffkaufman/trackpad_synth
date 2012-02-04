@@ -21,6 +21,9 @@ void usage() {
   printf("  -C [nnn]  Specify scale (ex: '024579B')\n");
   printf("  -S        Send SKINI to stdout instead of MIDI from a\n");
   printf("            virtual source.\n");
+  printf("  -L        Send letters to stdout instead of MIDI from a\n");
+  printf("            virtual source.\n");
+  printf("  -T        Twelve spots instead of rows; good with -L\n");
   printf("  -V        Use the far left of the controller as a\n");
   printf("            volume control.\n");
   printf("  -o [N]    Divide the trackpad vertically into this many\n");
@@ -52,7 +55,7 @@ int main(int argc, char** argv) {
   tml_set_scale("024579B");
 
   int optch;
-  while ((optch = getopt(argc, argv, "hk:HrxK5C:SVo:s:vac:pP")) != -1) {
+  while ((optch = getopt(argc, argv, "hk:HrxK5C:SLTVo:s:vac:pP")) != -1) {
     switch (optch) {
     case 'k':
       while (optarg[0] == ' ') {
@@ -100,6 +103,14 @@ int main(int argc, char** argv) {
       break;
     case 'S':
       tml_midi = 0;
+      tml_skini = 1;
+      break;
+    case 'L':
+      tml_midi = 0;
+      tml_letters = 1;
+      break;
+    case 'T':
+      tml_twelve = 1;
       break;
     case 'V':
       tml_use_sidevolume = 1;
