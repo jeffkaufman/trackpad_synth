@@ -11,8 +11,7 @@ int tml_n_octaves = 5; /* how many octaves on the trackpad? */
 int tml_octave_shift = 3; /* how far lower than the top of our range should we be at? */
 int tml_midi = 1; /* should we use midi? */
 int tml_skini = 0; /* should we use SKINI? */
-int tml_letters = 0; /* should we use letters? */
-int tml_twelve = 0; /* should we use the alternate twelve button arrangement? */
+int tml_letters = 0; /* should we use letters and a circular arrangement? */
 int tml_send_aftertouch = 0; /* send aftertouch messages */
 int tml_send_channel_pressure = 0; /* send channel pressure messages */
 int tml_send_channel_volume = 0; /* send channel pressure as a volume message */
@@ -291,11 +290,13 @@ void tml_do_note(Finger *f) {
   float x = f->normalized.pos.x;
   float y = f->normalized.pos.y;
 
-  if (tml_twelve) {
+  if (tml_letters) {
+    int v = -1;
+
+    /*
     int c = x*5;
     int r = y*3;
 
-    int v = -1;
     if (r == 0 && c == 0) { v = 0; }
     else if (r == 0 && c == 1) { v = 1; }
     else if (r == 0 && c == 2) { v = 2; }
@@ -308,6 +309,33 @@ void tml_do_note(Finger *f) {
     else if (r == 2 && c == 1) { v = 9; }
     else if (r == 2 && c == 0) { v = 10; }
     else if (r == 1 && c == 0) { v = 11; }
+    */
+
+    /*
+    int c = x*4;
+    int r = y*4;
+
+    if (r == 0 && c == 0) { v = 0; }
+    else if (r == 0 && c == 1) { v = 1; }
+    else if (r == 0 && c == 2) { v = 2; }
+    else if (r == 0 && c == 3) { v = 3; }
+    else if (r == 1 && c == 3) { v = 4; }
+    else if (r == 2 && c == 3) { v = 5; }
+    else if (r == 3 && c == 3) { v = 6; }
+    else if (r == 3 && c == 2) { v = 7; }
+    else if (r == 3 && c == 1) { v = 8; }
+    else if (r == 3 && c == 0) { v = 9; }
+    else if (r == 2 && c == 0) { v = 10; }
+    else if (r == 1 && c == 0) { v = 11; }
+    */
+
+    x = 0.5-x;
+    y = y-0.5;
+    
+
+    //printf("atan2(x=%.3f, y=%.3f)/(2*PI)+.5=%.3f\n", x,y,atan2(x,y)/(2*3.1415926)+.5); 
+      
+    v = tml_scale_note(atan2(x, y) / (3.1415926*2) + 0.5) % 12;
 
     if (v != -1) { tml_notes[v].val = 128; }
   }
