@@ -11,7 +11,8 @@ int tml_n_octaves = 5; /* how many octaves on the trackpad? */
 int tml_octave_shift = 3; /* how far lower than the top of our range should we be at? */
 int tml_midi = 1; /* should we use midi? */
 int tml_skini = 0; /* should we use SKINI? */
-int tml_letters = 0; /* should we use letters and a circular arrangement? */
+int tml_letters = 0; /* should we use letters? */
+int tml_circle = 0; /* should we use a circular arrangement? */
 int tml_send_aftertouch = 0; /* send aftertouch messages */
 int tml_send_channel_pressure = 0; /* send channel pressure messages */
 int tml_send_channel_volume = 0; /* send channel pressure as a volume message */
@@ -290,7 +291,7 @@ void tml_do_note(Finger *f) {
   float x = f->normalized.pos.x;
   float y = f->normalized.pos.y;
 
-  if (tml_letters) {
+  if (tml_circle) {
     int v = -1;
 
     /*
@@ -329,7 +330,7 @@ void tml_do_note(Finger *f) {
     else if (r == 1 && c == 0) { v = 11; }
     */
 
-    x = 0.5-x;
+    x = (0.5-x)*16/9;
     y = y-0.5;
     
 

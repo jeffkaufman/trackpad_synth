@@ -22,8 +22,8 @@ void usage() {
   printf("  -S        Send SKINI to stdout instead of MIDI from a\n");
   printf("            virtual source.\n");
   printf("  -L        Send letters to stdout instead of MIDI from a\n");
-  printf("            virtual source.  Uses circular arrangement\n");
-  printf("  -R        Circular arrangement; good with -L\n");
+  printf("            virtual source.\n");
+  printf("  -R        Circular arrangement; implies -L\n");
   printf("  -V        Use the far left of the controller as a\n");
   printf("            volume control.\n");
   printf("  -o [N]    Divide the trackpad vertically into this many\n");
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
   tml_set_scale("024579B");
 
   int optch;
-  while ((optch = getopt(argc, argv, "hk:HrxK5C:SLVo:s:vac:pP")) != -1) {
+  while ((optch = getopt(argc, argv, "hk:HrxK5C:SLRVo:s:vac:pP")) != -1) {
     switch (optch) {
     case 'k':
       while (optarg[0] == ' ') {
@@ -105,6 +105,8 @@ int main(int argc, char** argv) {
       tml_midi = 0;
       tml_skini = 1;
       break;
+    case 'R': /* implies L */
+      tml_circle = 1;
     case 'L':
       tml_midi = 0;
       tml_letters = 1;

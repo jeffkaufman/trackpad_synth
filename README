@@ -25,9 +25,9 @@ Download, install, run.  Once it's running, select "touchpad" under
 Source Installation
 -------------------
 
-Choose either MIDI or SKINI output.  MIDI lets you choose from more
-and better voices, SKINI lets you write new voices with the stanford
-toolkit.
+Choose either MIDI, SKINI, or Octaveless output.  MIDI lets you choose from more and
+better voices, SKINI lets you write new voices with the stanford toolkit, Octaveless
+doesn't have octaves.
 
 
   MIDI
@@ -55,7 +55,26 @@ You should hear something.
 Put the stk folder paralell to our test.m and Makefile.
 
 
-Once you have either MIDI or SKINI working, in this directory run either:
+  Octaveless
+  ----------
+
+Get octaveless from:
+
+   https://github.com/jeffkaufman/octaveless
+
+Build it (requires port audio) and check that it works as:
+
+   gcc -o octaveless octaveless.c -lportaudio -Wall
+   echo A | ./octaveless
+
+You should hear something; kill it with Ctrl+C.
+
+Copy the octaveless binary to this directory
+
+  cp /path/to/octaveless .
+
+
+Once you have MIDI, SKINI, or Octaveless working, in this directory run one of:
 
   # for midi
   make
@@ -64,9 +83,14 @@ Once you have either MIDI or SKINI working, in this directory run either:
   # for skini
   make runskini
 
+  # for octaveless
+  make runoctaveless
+
   # for midi, simple
   just double click on the trackcontrol command line program
-  
+
+
+
 Kill it with control C when you're done.  It puts midi on channel 3,
 so that's the one you'd twiddle settings for.  Options are:
 

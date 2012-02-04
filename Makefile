@@ -7,6 +7,8 @@ trackcontroller: trackcontroller.m trackmidilib.h
 
 runskini: trackcontroller
 	./trackcontroller -S -k ${KEY} | stk-4.4.2/projects/demo/demo Clarinet -n 12 -or -ip 
+runoctaveless: trackcontroller
+	./trackcontroller -L -k ${KEY} | ./octaveless
 
 runsolo: trackcontroller
 	./trackcontroller
